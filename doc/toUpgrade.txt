@@ -1,0 +1,19 @@
+PARTIE 1:
+    methode de recuperation du temps de publication =
+    {
+        le scrapper va extraire soit "A l'instant" soit 
+        "il y a [valeur numerique recupere( ou "une" seul execption)] {min/heures/semaines/mois}"
+        
+
+        pour l'instant le bot prend en compte la valeur numerique
+        en valeur de comparaison sans ce soucier de l'unite temporel {min/heures/semaines/mois}
+
+
+        1.1 :
+            de plus je pense qu'il serait bien de trouver une autre methode pour la recuperation
+            de la publication celle ci fait faire des operations trop couteuse (acces a la page) pour des items qui
+            ne seront pas forcement garder :
+    }
+
+
+PARTIE 2:

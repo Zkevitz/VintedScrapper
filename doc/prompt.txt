@@ -1,0 +1,3 @@
+vinted good try : 
+	-use generic research like -sac a main -sacoche gucci
+	-work with class --> By.CLASS_NAME, 'new-item-box__overlay--clickable'
