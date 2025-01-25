@@ -12,6 +12,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 
 
+# map de stockage des marques et prix 
+price_and_brand = {}
+
+
 # Crée une instance de bot
 intents = discord.Intents.all()
 intents.messages = True
@@ -42,13 +46,26 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 #// prend la marque extrait de la page de recherche pour faire un match_case(techniques a ameliore)
 #// pour ne sortir que les items en lien avec la demande utilisateur
 #// renvoie 0 pour un match et 1 pour un non match
-def get_match(brand_match):
-  match_list = ("gucci", "Nike", "The North Face", "Puma", "Moncler", "Carhartt")
-  for match in match_list:
-      if match.lower() == brand_match.lower():
-          return 0
+def get_match(brand_match, price):
+  try :
+    price_match = int(get_title(price))
+  except ValueError :
+     price_match = 999999  
+  for brand in price_and_brand:
+      if brand.lower() == brand_match.lower():
+          if price_and_brand[brand] >= price_match:
+            return 0
   return 1
+
+
+
   
+#// simple debug function to display price_and_brand::map
+def display_price_and_brand() :
+    for brand in price_and_brand:
+        print(f"{brand}: {price_and_brand[brand]}")
+
+
 
 
 # // methode cree car je n'arrivais pas a extraire la sous-chaine que je souhaitais avec les methodes 
@@ -66,14 +83,37 @@ def get_title(input_str):
 
 
 
-@bot.command()
-async def lunchScrap(ctx, url: str = None):
 
-  if url is None:
+# // initialise la map price_and_brand avec l'entre utilisateur des marques et prix a verifier
+def init_request(arg):
+    paires = arg.split(',')
+    for paire in paires :
+        brand, valeur = paire.split(':')
+        price_and_brand[brand] = int(valeur)
+
+
+
+@bot.command()
+async def fcktest(ctx):
+    await ctx.send("yo!!")
+
+
+
+# @bot.command()
+# async def ShowList():
+
+
+
+@bot.command()
+async def lunchScrap(ctx, arg: str = None):
+
+  if arg is None:
     await ctx.send("Tu dois fournir une URL après la commande ! Exemple: `!lunchScrap http://example.com`.")
     return
   else:
-    print(url)
+    init_request(arg)
+    display_price_and_brand()
+    await ctx.send("liste de monitoring charger, je me mets a chercher vos articles")
 
 
   
@@ -81,7 +121,14 @@ async def lunchScrap(ctx, url: str = None):
   driver = await bot.loop.run_in_executor(None, start_selenium)
   
   while True:
-    
+
+    if len(visited_items) > 5000 : 
+      # Convertir l'ensemble en liste
+      item_list = list(visited_items)
+      half = len(item_list) // 2
+      visited_item = set(item_list[:half])
+
+
     driver.get('https://www.vinted.fr/catalog?time=1732785164&catalog[]=5&order=newest_first&catalog_from=0&page=1')
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'new-item-box__overlay--clickable')))
 
@@ -104,6 +151,12 @@ async def lunchScrap(ctx, url: str = None):
         data = item.get('title')
         brand_match = re.search(r'marque\s*:\s*([^,]+)', data)
         brand_match = brand_match.group(1)
+        price_amount = re.search(r'prix\s*:\s*([\d,]+)\s*€', data)
+        if price_amount :
+            price_amount = price_amount.group(1)
+        else :
+           print("error with price!!!")
+           print(data)
         
 
         if get_match(brand_match) == 0: # si le match est bon
@@ -135,9 +188,6 @@ async def lunchScrap(ctx, url: str = None):
             images = item_soup.find_all('img', alt=re.compile(rf'^{re.escape(post_title)}'))
             
             print(f"longueur de retour des images trouver {len(images)}")
-            
-
-            price_amount = re.search(r'prix\s*:\s*([\d,]+)\s*€', data)
 
             if price_amount :
               
@@ -146,8 +196,6 @@ async def lunchScrap(ctx, url: str = None):
                 if i < 3:  # Limiter à 3 images
                   img_url.append(img.get('src'))
 
-              
-              price_amount = price_amount.group(1)
               price_currency = "EUR" # A REVOIR
               #print(publish_time, brand_match, post_title, href, price_amount)
 
@@ -177,7 +225,8 @@ async def lunchScrap(ctx, url: str = None):
                 print('publish_time =', publish_time, file=f)
                 print('post_title =', post_title, file=f)
                 print('img_url[0] =', img_url[0], file=f)
-    
+    print(f"longueur des items en memoire = {len(visited_items)}")
+    await ctx.send("J'AI FINIS DE FAIRE LE TOUR")
     await asyncio.sleep(6)
     
 BOT_TOKEN = os.environ['BOT_TOKEN']
